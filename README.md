@@ -38,3 +38,9 @@
    ```bash
    npm start
    ```
+
+![4be26f2c5851510f140ef839ef4f6e1](https://github.com/user-attachments/assets/0b35e2cf-ac7a-4f2a-9136-5a723c8ce06b)
+
+![397699f77804ce23e15df8e5902ab26](https://github.com/user-attachments/assets/7f7e0ea6-ced9-42eb-8a54-c09de76e3f6f)
+
+![f4b4415c30e8a9afe2ee9e472d993bd](https://github.com/user-attachments/assets/2912a0f0-5363-4218-be56-2b15ef5e6579)

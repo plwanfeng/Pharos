@@ -1,99 +1,40 @@
-# Pharos Testnet Auto Bot
+# Pharos 测试网自动化工具
 
-An automated bot for interacting with the Pharos Testnet, performing swaps, transfers, faucet claims, and daily check-ins to potentially qualify for airdrops.
+用于与Pharos测试网交互，执行代币兑换、转账、水龙头领取以及每日签到
 
-## Features ✨
+## 功能特点 ✨
 
-- **Automated Swaps**: Performs random swaps between WPHRS and USDC tokens
-- **PHRS Transfers**: Sends small amounts of PHRS to random addresses
-- **Faucet Claims**: Automatically claims testnet tokens from the faucet
-- **Daily Check-ins**: Completes daily check-in tasks for potential rewards
-- **Proxy Support**: Rotates proxies for each operation (if provided)
-- **Multi-wallet Support**: Processes multiple wallets sequentially
+- **自动兑换**：在WPHRS和USDC代币之间执行随机兑换操作
+- **PHRS转账**：向随机地址发送少量PHRS代币
+- **水龙头领取**：自动从测试网水龙头领取测试代币
+- **每日签到**：完成每日签到任务以获取潜在奖励
+- **代理支持**：为每次操作轮换使用代理（如果提供）
+- **多钱包支持**：按顺序处理多个钱包
+- **一键领水**：可以一键领水
+- **批量归集**：可以一键归集水
 
-## Prerequisites 📋
+## 系统要求 📋
 
-- Node.js (v18 or higher)
-- npm or yarn
-- Pharos Testnet wallet with private keys
-- (Optional) Proxy list in `proxies.txt`
+- Node.js (v18或更高版本)
+- npm
 
-## Installation ⚙️
+## 安装步骤 ⚙️
 
-1. Clone the repository:
+1. 克隆仓库:
    ```bash
-   git clone https://github.com/vikitoshi/Pharos-Auto-Bot.git
-   cd Pharos-Auto-Bot
+   git clone https://github.com/vikitoshi/Pharos.git
+   cd Pharos
    ```
-
-2. Install dependencies:
+2. 安装依赖:
    ```bash
    npm install
    ```
-
-3. Create a `.env` file in the root directory with your private keys:
+3. (可选) 在`proxies.txt`中添加代理(每行一个):
    ```
-   PRIVATE_KEY_1=your_first_private_key_here
-   PRIVATE_KEY_2=your_second_private_key_here
+   http://用户名:密码@IP:端口
+   socks5://用户名:密码@IP:端口
    ```
-
-4. (Optional) Add proxies to `proxies.txt` (one per line):
+4、运行工具
+   ```bash
+   npm start
    ```
-   http://user:pass@ip:port
-   socks5://user:pass@ip:port
-   ```
-
-## Configuration ⚙️
-
-The bot comes with default settings for the Pharos Testnet, but you can modify:
-
-- Network RPC URL in `networkConfig`
-- Contract addresses in `tokens` object
-- Swap amounts in `performSwap` function
-- Transfer amounts in `transferPHRS` function
-
-## Usage 🚀
-
-Run the bot:
-```bash
-node index.js
-```
-
-The bot will:
-1. Display a banner with project info
-2. Load proxies (if available)
-3. Process each wallet sequentially:
-   - Claim faucet (if available)
-   - Perform daily check-in
-   - Execute 10 PHRS transfers
-   - Execute 10 token swaps
-4. Repeat every 30 minutes
-
-## Logging 📝
-
-The bot provides color-coded logs:
-- ✅ Success messages (green)
-- ⚠️ Warnings (yellow)
-- ❌ Errors (red)
-- 🔄 Loading/process indicators (cyan)
-- ➤ Step-by-step actions (white)
-
-## Important Notes ⚠️
-
-1. This bot is for TESTNET use only
-2. Never use mainnet private keys
-3. The bot runs indefinitely until stopped (Ctrl+C)
-4. All transactions use 0 gas price (testnet feature)
-5. The bot includes random delays between operations
-
-## Support 💬
-
-For issues or questions, please open an issue on GitHub.
-
-## Disclaimer ⚠️
-
-This software is provided "as is" without warranties. Use at your own risk. The developers are not responsible for any losses or issues caused by using this bot.
-
-## License 📄
-
-MIT License - See LICENSE file for details

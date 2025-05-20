@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharos 自动机器人</title>
+  <style>
+    /* 全局样式 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+    }
+
+    body {
+      background-color: #f0f0f0;
+      color: #000000;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      height: 100vh;
+      user-select: none;
+    }
+
+    /* 布局 */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      border: 1px solid #999999;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 自定义窗口标题栏 */
+    .window-titlebar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 32px;
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      -webkit-app-region: drag; /* 允许拖拽 */
+    }
+    
+    .window-title {
+      color: white;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+    
+    .window-controls {
+      display: flex;
+      -webkit-app-region: no-drag; /* 控制按钮不可拖拽 */
+    }
+    
+    .window-control-button {
+      width: 46px;
+      height: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    
+    .window-control-button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .window-control-button.close:hover {
+      background-color: #e81123;
+    }
+
+    .main-content {
+      display: flex;
+      flex-direction: column; /* 改为纵向排列 */
+      flex: 1;
+      overflow: hidden;
+      background-color: #e6e6e6;
+    }
+
+    /* 主要内容区 */
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* 选项卡样式 */
+    .tabs-container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .tab-header {
+      display: flex;
+      background-color: #d9d9d9;
+      border-bottom: 1px solid #b3b3b3;
+      padding: 0;
+    }
+
+    .tab-item {
+      cursor: pointer;
+      padding: 8px 16px;
+      background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+      border-right: 1px solid #ccc;
+      font-size: 13px;
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+      margin-top: 2px;
+      margin-right: 2px;
+      border: 1px solid #ccc;
+    }
+
+    .tab-item.active {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #ffffff;
+      border-color: #2a446b;
+    }
+
+    .tab-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .tab-pane {
+      flex: 1;
+      display: none;
+      overflow: auto;
+      padding: 10px;
+    }
+
+    .tab-pane.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 配置卡片布局 */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    /* 功能卡片 */
+    .function-card {
+      background-color: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 250px;
+    }
+
+    .function-card-header {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: white;
+      padding: 8px 10px;
+      margin: -10px -10px 10px -10px;
+      border-top-left-radius: 3px;
+      border-top-right-radius: 3px;
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      height: 36px;
+    }
+
+    /* 表单元素样式 */
+    .form-group {
+      margin-bottom: 12px;
+      width: 100%;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: #333;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    
+    .form-group input[type="text"],
+    .form-group textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+    
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    
+    /* 按钮统一样式 */
+    button, .btn {
+      padding: 6px 12px;
+      background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      color: #333;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+      min-width: 80px;
+      margin: 2px 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+    }
+    
+    button:hover, .btn:hover {
+      background: linear-gradient(to bottom, #e8e8e8, #d8d8d8);
+      border-color: #aaa;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: white;
+      border-color: #2a446b;
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(to bottom, #5d88b6, #486a9d);
+      border-color: #2a446b;
+    }
+    
+    .btn-success {
+      background: linear-gradient(to bottom, #4caf50, #388e3c);
+      color: white;
+      border-color: #2e7d32;
+    }
+    
+    .btn-success:hover {
+      background: linear-gradient(to bottom, #5cb860, #4cae4c);
+      border-color: #2e7d32;
+    }
+    
+    .btn-danger {
+      background: linear-gradient(to bottom, #f44336, #d32f2f);
+      color: white;
+      border-color: #b71c1c;
+    }
+    
+    .btn-danger:hover {
+      background: linear-gradient(to bottom, #f55a4e, #e33c3c);
+      border-color: #b71c1c;
+    }
+    
+    button:disabled, .btn:disabled {
+      background: #e0e0e0;
+      color: #999;
+      border-color: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    
+    /* 复选框容器 */
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .checkbox-container input[type="checkbox"],
+    .checkbox-container input[type="radio"] {
+      margin-right: 8px;
+    }
+    
+    .checkbox-container label {
+      margin-bottom: 0;
+      font-weight: normal;
+    }
+
+    /* 单选按钮组样式 */
+    .radio-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    /* 钱包状态样式 */
+    .wallet-status {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      padding: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    
+    .wallet-address {
+      font-family: Consolas, monospace;
+      color: #2a446b;
+    }
+    
+    .wallet-balance {
+      font-weight: bold;
+      color: #388e3c;
+    }
+
+    /* 账户监控样式 */
+    .accounts-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .accounts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .accounts-header h3 {
+      font-size: 16px;
+      font-weight: bold;
+      color: #2a446b;
+    }
+
+    .accounts-dashboard {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .dashboard-card {
+      flex: 1;
+      background: linear-gradient(to bottom, #f8f8f8, #e8e8e8);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .dashboard-card-title {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .dashboard-card-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2a446b;
+    }
+
+    .dashboard-card.success {
+      background: linear-gradient(to bottom, #e8f5e9, #c8e6c9);
+    }
+
+    .dashboard-card.pending {
+      background: linear-gradient(to bottom, #fff8e1, #ffecb3);
+    }
+
+    .accounts-table-wrapper {
+      flex: 1;
+      overflow: hidden;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+      margin-bottom: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-description {
+      background: linear-gradient(to bottom, #f5f5f5, #e1e1e1);
+      border-bottom: 1px solid #ccc;
+      padding: 10px 15px;
+      font-size: 12px;
+    }
+
+    .table-description p {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    .table-description ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      columns: 2;
+    }
+
+    .table-description li {
+      margin-bottom: 3px;
+      padding-left: 5px;
+      position: relative;
+    }
+
+    .table-description li::before {
+      content: "•";
+      position: absolute;
+      left: -5px;
+      color: #4e79a7;
+    }
+
+    .accounts-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .accounts-table th,
+    .accounts-table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .accounts-table th {
+      background: linear-gradient(to bottom, #f5f5f5, #e1e1e1);
+      font-weight: bold;
+      font-size: 13px;
+      color: #333;
+      position: sticky;
+      top: 0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 添加表格列标题样式 */
+    .accounts-table th.col-address {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #fff;
+    }
+    
+    .accounts-table th.col-balance {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #fff;
+    }
+    
+    .accounts-table th.col-status {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #fff;
+    }
+    
+    .accounts-table th.col-faucet {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #fff;
+      border-bottom: none;
+    }
+    
+    .accounts-table th.col-checkin {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #fff;
+      border-bottom: none;
+    }
+    
+    .accounts-table th.col-transfer {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #fff;
+      border-bottom: none;
+    }
+    
+    .accounts-table th.col-swap {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #fff;
+      border-bottom: none;
+    }
+    
+    .accounts-table th.col-nextrun {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: #fff;
+    }
+
+    .accounts-table tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .accounts-table tbody tr:hover {
+      background-color: #f0f7ff;
+    }
+
+    .accounts-table tbody tr.completed-row {
+      background-color: #e8f5e9;
+    }
+
+    .accounts-table tbody tr.running-row {
+      background-color: #e3f2fd;
+    }
+
+    .accounts-table tbody tr.waiting-row {
+      background-color: #fff8e1;
+    }
+
+    .status-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: bold;
+      text-align: center;
+      min-width: 70px;
+    }
+
+    .status-waiting {
+      background-color: #fff8e1;
+      border: 1px solid #ffecb3;
+      color: #ff8f00;
+    }
+
+    .status-running {
+      background-color: #e3f2fd;
+      border: 1px solid #bbdefb;
+      color: #1976d2;
+    }
+
+    .status-completed {
+      background-color: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      color: #388e3c;
+    }
+
+    .status-cooling {
+      background-color: #f3e5f5;
+      border: 1px solid #e1bee7;
+      color: #8e24aa;
+    }
+
+    .status-stopped {
+      background-color: #ffebee;
+      border: 1px solid #ffcdd2;
+      color: #d32f2f;
+    }
+
+    .task-timestamp {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .task-completed {
+      color: #388e3c;
+      font-weight: bold;
+    }
+
+    .next-run-timer {
+      margin-top: 10px;
+      padding: 15px;
+      background: linear-gradient(to bottom, #f8f8f8, #e8e8e8);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .timer-label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .timer-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2a446b;
+      font-family: 'Consolas', monospace;
+    }
+
+    .timer-progress {
+      width: 100%;
+      height: 6px;
+      background-color: #ddd;
+      border-radius: 3px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .timer-progress-bar {
+      height: 100%;
+      background: linear-gradient(to right, #4e79a7, #6992c3);
+      width: 0%;
+      transition: width 1s linear;
+    }
+
+    .wallet-card {
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .wallet-card-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .wallet-address-full {
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      color: #0066cc;
+      word-break: break-all;
+    }
+
+    .wallet-balance-large {
+      font-size: 16px;
+      font-weight: bold;
+      color: #388e3c;
+    }
+
+    .wallet-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .wallet-detail-item {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .wallet-detail-label {
+      color: #666;
+    }
+
+    .wallet-detail-value {
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* 资金归集结果样式 */
+    .collect-results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .collect-results-table th {
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: white;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .collect-results-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .collect-results-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .collect-summary {
+      background: linear-gradient(to bottom, #f8f8f8, #e8e8e8);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    .collect-success {
+      color: #388e3c;
+      font-weight: bold;
+    }
+
+    .collect-error {
+      color: #d32f2f;
+      font-weight: bold;
+    }
+
+    /* 日志区域样式 */
+    .logs-area {
+      height: 200px; 
+      border-top: 1px solid #999;
+      display: flex;
+      flex-direction: column;
+      background-color: #e6e6e6;
+      margin-top: 10px;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 10px;
+      background: linear-gradient(to bottom, #4e79a7, #375d8e);
+      color: white;
+      border-bottom: 1px solid #2a446b;
+      height: 32px;
+    }
+
+    .log-header h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .log-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      background-color: #ffffff;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      margin: 5px 10px 10px 10px;
+      border-radius: 3px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 日志条目样式 */
+    .log-entry {
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+    
+    .log-time {
+      color: #666;
+      margin-right: 5px;
+    }
+    
+    .log-type-info {
+      color: #2196f3;
+    }
+    
+    .log-type-success {
+      color: #4caf50;
+    }
+    
+    .log-type-error {
+      color: #f44336;
+    }
+    
+    .log-type-warn {
+      color: #ff9800;
+    }
+    
+    .log-type-wallet {
+      color: #9c27b0;
+    }
+    
+    .log-type-step {
+      color: #607d8b;
+    }
+    
+    .log-type-loading {
+      color: #00bcd4;
+    }
+    
+    /* 状态栏样式 */
+    .status-bar {
+      height: 24px;
+      padding: 0 10px;
+      background: linear-gradient(to bottom, #e0e0e0, #d0d0d0);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #b3b3b3;
+      font-size: 12px;
+      color: #333;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+    }
+
+    .status-indicator::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .status-indicator.idle::before {
+      background-color: #9e9e9e;
+      border: 1px solid #757575;
+    }
+
+    .status-indicator.running::before {
+      background-color: #4caf50;
+      border: 1px solid #388e3c;
+    }
+
+    .status-indicator.error::before {
+      background-color: #f44336;
+      border: 1px solid #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 自定义标题栏 -->
+    <div class="window-titlebar">
+      <div class="window-title">Pharos 测试网 - by晚风(x.com/pl_wanfeng)</div>
+      <div class="window-controls">
+        <div class="window-control-button minimize" id="minimizeBtn">─</div>
+        <div class="window-control-button maximize" id="maximizeBtn">□</div>
+        <div class="window-control-button close" id="closeBtn">✕</div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- 主内容区 -->
+      <div class="content-area">
+        <!-- 选项卡容器 -->
+        <div class="tabs-container">
+          <div class="tab-header">
+            <div class="tab-item active" data-tab="config">配置与操作</div>
+            <div class="tab-item" data-tab="monitor">账户监控</div>
+          </div>
+          
+          <div class="tab-content">
+            <!-- 配置与操作选项卡 -->
+            <div class="tab-pane active" id="configTab">
+              <div class="config-grid">
+                <!-- 钱包配置卡片 -->
+                <div class="function-card">
+                  <div class="function-card-header">钱包配置</div>
+                  <div class="form-group">
+                    <label for="privateKeys">私钥（每行一个）</label>
+                    <textarea id="privateKeys" placeholder="在此输入私钥..." style="height: 120px; width: 100%; font-family: Consolas, monospace;"></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="inviteCode">邀请码</label>
+                    <input type="text" id="inviteCode" placeholder="邀请码" style="font-family: Consolas, monospace;">
+                  </div>
+                  
+                  <div style="margin-top: auto; padding-top: 10px;">
+                    <button id="saveConfig" class="btn btn-primary" style="width: 100%;">保存配置</button>
+                  </div>
+                </div>
+
+                <!-- 网络设置卡片 -->
+                <div class="function-card">
+                  <div class="function-card-header">网络设置</div>
+                  <div class="form-group">
+                    <div class="checkbox-container">
+                      <input type="checkbox" id="useProxies">
+                      <label for="useProxies">使用代理</label>
+                    </div>
+                    <div style="margin-top: 10px;">
+                      <label>代理列表状态</label>
+                      <div id="proxyStatus" style="font-size: 12px; color: #666; padding: 5px 0;">未加载代理</div>
+                    </div>
+                    <div style="margin-top: 5px;">
+                      <button id="importProxies" class="btn" style="width: 100%;">导入代理</button>
+                    </div>
+                  </div>
+                  
+                  <div style="margin-top: 15px;">
+                    <div class="function-card-header" style="margin: 0 0 10px 0; font-size: 13px;">钱包状态</div>
+                    <div class="wallet-status" id="walletStatus" style="max-height: 100px; overflow-y: auto;">
+                      未加载钱包
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 基础操作卡片 -->
+                <div class="function-card">
+                  <div class="function-card-header">基础操作</div>
+                  <div class="form-group">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                      <label for="requestInterval">请求间隔（秒）</label>
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" id="requestInterval" value="3" min="1" max="30" style="width: 70px; text-align: center;">
+                        <span style="font-size: 12px; color: #666;">避免请求过快导致限制</span>
+                      </div>
+                    </div>
+                    <div class="actions" style="display: flex; flex-direction: column; gap: 10px;">
+                      <button id="startBot" class="btn btn-success" style="width: 100%;">启动机器人</button>
+                      <button id="stopBot" class="btn btn-danger" disabled style="width: 100%;">停止机器人</button>
+                      <button id="claimFaucet" class="btn btn-primary" style="width: 100%;">一键领取水龙头</button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 资金操作卡片 -->
+                <div class="function-card">
+                  <div class="function-card-header">资金归集</div>
+                  <div class="form-group">
+                    <label for="collectAddress">接收地址</label>
+                    <input type="text" id="collectAddress" placeholder="输入资金接收地址">
+                  </div>
+                  
+                  <div class="form-group">
+                    <label>归集数量</label>
+                    <div class="radio-options">
+                      <div class="checkbox-container">
+                        <input type="radio" id="collectAll" name="collectAmount" value="all" checked>
+                        <label for="collectAll">全部余额</label>
+                      </div>
+                      <div class="checkbox-container">
+                        <input type="radio" id="collectFixed" name="collectAmount" value="fixed">
+                        <label for="collectFixed">固定数量</label>
+                        <input type="text" id="fixedAmount" placeholder="数量" disabled style="width: 100px; margin-left: 5px;">
+                      </div>
+                      <div class="checkbox-container">
+                        <input type="radio" id="collectPercent" name="collectAmount" value="percent">
+                        <label for="collectPercent">百分比</label>
+                        <input type="text" id="percentAmount" placeholder="例如：50" disabled style="width: 80px; margin-left: 5px;">%
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="checkbox-container" style="margin-top: 5px;">
+                    <input type="checkbox" id="keepGas">
+                    <label for="keepGas">保留少量 PHRS 作为 Gas 费用</label>
+                  </div>
+                  
+                  <div style="margin-top: auto; padding-top: 10px;">
+                    <button id="collectFunds" class="btn btn-primary" style="width: 100%;">执行资金归集</button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 归集结果区域 -->
+              <div id="collectResults" style="display: none;">
+                <div class="function-card">
+                  <div class="function-card-header">归集结果</div>
+                  <div id="collectResultsList" class="wallet-status"></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 账户监控选项卡 -->
+            <div class="tab-pane" id="monitorTab">
+              <div class="accounts-container">
+                <div class="accounts-header">
+                  <h3>账户监控中心</h3>
+                  <div>
+                    <button id="toggleView" class="btn">切换视图</button>
+                    <button id="refreshAccounts" class="btn">刷新数据</button>
+                  </div>
+                </div>
+                
+                <!-- 仪表盘概览 -->
+                <div class="accounts-dashboard">
+                  <div class="dashboard-card">
+                    <div class="dashboard-card-title">总钱包数量</div>
+                    <div class="dashboard-card-value" id="totalWallets">0</div>
+                  </div>
+                  <div class="dashboard-card">
+                    <div class="dashboard-card-title">总 PHRS 余额</div>
+                    <div class="dashboard-card-value" id="totalBalance">0.00</div>
+                  </div>
+                  <div class="dashboard-card success">
+                    <div class="dashboard-card-title">今日签到数</div>
+                    <div class="dashboard-card-value" id="checkInCount">0</div>
+                  </div>
+                  <div class="dashboard-card success">
+                    <div class="dashboard-card-title">今日水龙头领取</div>
+                    <div class="dashboard-card-value" id="faucetCount">0</div>
+                  </div>
+                </div>
+                
+                <!-- 账户列表视图 -->
+                <div id="accountListView">
+                  <div class="accounts-table-wrapper">
+                    <div class="table-description">
+                      <p>表格说明: 本表展示了所有钱包的操作状态和时间信息</p>
+                      <ul>
+                        <li><strong>钱包地址</strong>: 账户的简化地址</li>
+                        <li><strong>PHRS 余额</strong>: 当前钱包中的 PHRS 代币余额</li>
+                        <li><strong>状态</strong>: 当前钱包的运行状态（等待中/运行中/已完成/冷却中）</li>
+                        <li><strong>上次水龙头</strong>: 最近一次领取测试币的时间</li>
+                        <li><strong>上次签到</strong>: 最近一次每日签到的时间</li>
+                        <li><strong>上次转账</strong>: 最近一次转账交易的时间</li>
+                        <li><strong>上次兑换</strong>: 最近一次代币兑换的时间</li>
+                        <li><strong>下次运行</strong>: 下一次自动执行任务的预计时间</li>
+                      </ul>
+                    </div>
+                    <table class="accounts-table" id="accountsTable">
+                      <thead>
+                        <tr>
+                          <th class="col-address">钱包地址</th>
+                          <th class="col-balance">PHRS 余额</th>
+                          <th class="col-status">状态</th>
+                          <th class="col-faucet">水龙头领取</th>
+                          <th class="col-checkin">每日签到</th>
+                          <th class="col-transfer">转账交易</th>
+                          <th class="col-swap">代币兑换</th>
+                          <th class="col-nextrun">下次运行</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td colspan="8" class="text-center">无账户数据</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                <!-- 钱包卡片视图 -->
+                <div id="walletCardView" style="display: none;">
+                  <div class="table-description">
+                    <p>卡片说明: 本视图以卡片形式展示各钱包的详细信息</p>
+                    <ul>
+                      <li><strong>钱包地址</strong>: 完整的钱包地址</li>
+                      <li><strong>PHRS 余额</strong>: 当前持有的 PHRS 代币数量</li>
+                      <li><strong>状态</strong>: 当前钱包任务状态</li>
+                      <li><strong>上次水龙头</strong>: 最近一次领取测试币时间</li>
+                      <li><strong>上次签到</strong>: 最近一次每日签到时间</li>
+                      <li><strong>上次转账</strong>: 最近一次转账交易时间</li>
+                      <li><strong>上次兑换</strong>: 最近一次代币兑换时间</li>
+                      <li><strong>下次运行</strong>: 下一次任务执行的预计时间</li>
+                    </ul>
+                  </div>
+                  <div id="walletCards"></div>
+                </div>
+                
+                <div class="next-run-timer" id="nextRunTimer">
+                  <div class="timer-label">下次任务运行倒计时</div>
+                  <div class="timer-value">--:--:--</div>
+                  <div class="timer-progress">
+                    <div class="timer-progress-bar" id="timerProgressBar"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 日志区域放到底部 -->
+      <div class="logs-area">
+        <div class="log-header">
+          <h3>活动日志</h3>
+          <button id="clearLogs" class="btn" style="min-width: 60px; background: linear-gradient(to bottom, #375d8e, #2a446b); color: white; border-color: #243a5f;">清除日志</button>
+        </div>
+        <div class="log-panel" id="logPanel"></div>
+      </div>
+      
+      <div class="status-bar">
+        <div class="status-indicator idle" id="statusIndicator">空闲</div>
+        <div id="statusDetails">就绪</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 添加窗口控制按钮功能
+    document.getElementById('minimizeBtn').addEventListener('click', () => {
+      window.api.minimizeWindow();
+    });
+    
+    document.getElementById('maximizeBtn').addEventListener('click', () => {
+      window.api.maximizeWindow();
+    });
+    
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      window.api.closeWindow();
+    });
+
+    // DOM Elements
+    const privateKeysTextarea = document.getElementById('privateKeys');
+    const inviteCodeInput = document.getElementById('inviteCode');
+    const useProxiesCheckbox = document.getElementById('useProxies');
+    const importProxiesBtn = document.getElementById('importProxies');
+    const saveConfigBtn = document.getElementById('saveConfig');
+    const walletStatusEl = document.getElementById('walletStatus');
+    const startBotBtn = document.getElementById('startBot');
+    const stopBotBtn = document.getElementById('stopBot');
+    const claimFaucetBtn = document.getElementById('claimFaucet');
+    const clearLogsBtn = document.getElementById('clearLogs');
+    const logPanelEl = document.getElementById('logPanel');
+    const statusIndicatorEl = document.getElementById('statusIndicator');
+    const statusDetailsEl = document.getElementById('statusDetails');
+    const tabItems = document.querySelectorAll('.tab-item');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    const accountsTableEl = document.getElementById('accountsTable');
+    const refreshAccountsBtn = document.getElementById('refreshAccounts');
+    const nextRunTimerEl = document.getElementById('nextRunTimer');
+    const timerValueEl = nextRunTimerEl.querySelector('.timer-value');
+    const timerProgressBarEl = document.getElementById('timerProgressBar');
+    const totalWalletsEl = document.getElementById('totalWallets');
+    const totalBalanceEl = document.getElementById('totalBalance');
+    const checkInCountEl = document.getElementById('checkInCount');
+    const faucetCountEl = document.getElementById('faucetCount');
+    const accountListViewEl = document.getElementById('accountListView');
+    const walletCardViewEl = document.getElementById('walletCardView');
+    const walletCardsEl = document.getElementById('walletCards');
+    const toggleViewBtn = document.getElementById('toggleView');
+    
+    // 一键归集相关元素
+    const collectAddressInput = document.getElementById('collectAddress');
+    const collectAllRadio = document.getElementById('collectAll');
+    const collectFixedRadio = document.getElementById('collectFixed');
+    const collectPercentRadio = document.getElementById('collectPercent');
+    const fixedAmountInput = document.getElementById('fixedAmount');
+    const percentAmountInput = document.getElementById('percentAmount');
+    const keepGasCheckbox = document.getElementById('keepGas');
+    const collectFundsBtn = document.getElementById('collectFunds');
+    const collectResultsDiv = document.getElementById('collectResults');
+    const collectResultsListDiv = document.getElementById('collectResultsList');
+
+    // State
+    let isRunning = false;
+    let wallets = [];
+    let accountsData = [];
+    let countdownInterval = null;
+    let maxCountdownTime = 30 * 60; // 30分钟倒计时
+    let isCardView = false; // 是否为卡片视图
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadConfig();
+      setupEventListeners();
+      
+      // Set up log update listener
+      window.api.onLogUpdate(handleLogUpdate);
+      
+      // Set up account status update listener
+      window.api.onAccountStatusUpdate(handleAccountStatusUpdate);
+      
+      // Initial account status load
+      await loadAccountStatus();
+      
+      // 设置归集选项相关事件
+      setupCollectOptions();
+    });
+    
+    // 设置归集选项相关事件
+    function setupCollectOptions() {
+      // 根据选择的归集方式启用/禁用相应输入框
+      collectAllRadio.addEventListener('change', updateCollectInputs);
+      collectFixedRadio.addEventListener('change', updateCollectInputs);
+      collectPercentRadio.addEventListener('change', updateCollectInputs);
+      
+      // 初始化归集选项状态
+      updateCollectInputs();
+      
+      // 设置归集钱包地址输入默认值（如果有钱包）
+      if (wallets.length > 0) {
+        collectAddressInput.value = wallets[0].address;
+      }
+      
+      // 归集按钮事件
+      collectFundsBtn.addEventListener('click', collectFunds);
+    }
+    
+    // 更新归集输入框状态
+    function updateCollectInputs() {
+      fixedAmountInput.disabled = !collectFixedRadio.checked;
+      percentAmountInput.disabled = !collectPercentRadio.checked;
+      keepGasCheckbox.disabled = !collectAllRadio.checked;
+    }
+    
+    // 执行资金归集
+    async function collectFunds() {
+      try {
+        // 获取私钥
+        const privateKeys = privateKeysTextarea.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line);
+          
+        if (privateKeys.length === 0) {
+          addLogEntry({
+            type: 'error',
+            message: '未提供私钥',
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+        
+        // 获取目标地址
+        const targetAddress = collectAddressInput.value.trim();
+        
+        if (!targetAddress) {
+          addLogEntry({
+            type: 'error',
+            message: '请输入资金接收地址',
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+        
+        // 确定归集类型和数量
+        let collectType = 'all';
+        let collectAmount = '0';
+        
+        if (collectFixedRadio.checked) {
+          collectType = 'fixed';
+          collectAmount = fixedAmountInput.value.trim();
+          
+          if (!collectAmount || isNaN(parseFloat(collectAmount)) || parseFloat(collectAmount) <= 0) {
+            addLogEntry({
+              type: 'error',
+              message: '请输入有效的固定数量',
+              timestamp: new Date().toISOString()
+            });
+            return;
+          }
+        } else if (collectPercentRadio.checked) {
+          collectType = 'percent';
+          collectAmount = percentAmountInput.value.trim();
+          
+          if (!collectAmount || isNaN(parseFloat(collectAmount)) || parseFloat(collectAmount) <= 0 || parseFloat(collectAmount) > 100) {
+            addLogEntry({
+              type: 'error',
+              message: '请输入有效的百分比值（1-100）',
+              timestamp: new Date().toISOString()
+            });
+            return;
+          }
+        }
+        
+        // 是否保留 Gas 费用
+        const keepGas = keepGasCheckbox.checked;
+        
+        // 显示加载状态
+        collectFundsBtn.disabled = true;
+        collectFundsBtn.textContent = '归集中...';
+        collectResultsDiv.style.display = 'block';
+        collectResultsListDiv.innerHTML = '<div>正在执行资金归集，请稍候...</div>';
+        
+        addLogEntry({
+          type: 'info',
+          message: `开始归集资金到地址: ${targetAddress}`,
+          timestamp: new Date().toISOString()
+        });
+        
+        // 调用后端 API
+        const result = await window.api.collectFunds({
+          privateKeys,
+          targetAddress,
+          collectType,
+          collectAmount,
+          keepGas
+        });
+        
+        // 恢复按钮状态
+        collectFundsBtn.disabled = false;
+        collectFundsBtn.textContent = '执行资金归集';
+        
+        if (result.success) {
+          // 显示归集结果
+          let html = '<div class="collect-success">归集操作完成</div>';
+          
+          const successCount = result.results.filter(r => r.success).length;
+          const totalAmount = result.results.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+          
+          html += `<div class="collect-summary">
+            <div>成功处理: ${successCount}/${result.results.length} 个钱包</div>
+            <div>总归集金额: ${totalAmount.toFixed(4)} PHRS</div>
+          </div>`;
+          
+          html += '<div style="margin-top: 10px; font-weight: bold;">钱包处理详情:</div>';
+          html += '<table class="collect-results-table">';
+          html += '<tr><th>钱包地址</th><th style="text-align: right;">金额</th><th style="text-align: center;">状态</th></tr>';
+          
+          result.results.forEach(item => {
+            const amountStr = parseFloat(item.amount) > 0 ? 
+              `${parseFloat(item.amount).toFixed(4)} PHRS` : 
+              '-';
+            
+            html += `<tr>
+              <td>${shortenAddress(item.address)}</td>
+              <td style="text-align: right;">${amountStr}</td>
+              <td style="text-align: center; color: ${item.success ? '#388e3c' : '#d32f2f'}">${item.message}</td>
+            </tr>`;
+          });
+          
+          html += '</table>';
+          collectResultsListDiv.innerHTML = html;
+          
+          // 在日志中添加成功消息
+          addLogEntry({
+            type: 'success',
+            message: `归集完成，成功处理 ${successCount}/${result.results.length} 个钱包，总金额: ${totalAmount.toFixed(4)} PHRS`,
+            timestamp: new Date().toISOString()
+          });
+          
+          // 重新检查钱包余额
+          await checkWallets();
+        } else {
+          // 显示错误
+          collectResultsListDiv.innerHTML = `<div class="collect-error">归集操作失败: ${result.error}</div>`;
+          
+          addLogEntry({
+            type: 'error',
+            message: `归集失败: ${result.error}`,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        // 恢复按钮状态
+        collectFundsBtn.disabled = false;
+        collectFundsBtn.textContent = '执行资金归集';
+        
+        // 显示错误
+        collectResultsListDiv.innerHTML = `<div class="collect-error">归集出错: ${error.message}</div>`;
+        
+        addLogEntry({
+          type: 'error',
+          message: `归集出错: ${error.message}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    // Load configuration
+    async function loadConfig() {
+      try {
+        const config = await window.api.getConfig();
+        privateKeysTextarea.value = (config.privateKeys || []).join('\n');
+        inviteCodeInput.value = config.inviteCode || 'jdrWvYccKEwr3fap';
+        useProxiesCheckbox.checked = config.proxyEnabled || false;
+        
+        // Check wallet balances
+        await checkWallets();
+      } catch (error) {
+        console.error('加载配置失败:', error);
+      }
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      saveConfigBtn.addEventListener('click', saveConfig);
+      importProxiesBtn.addEventListener('click', importProxies);
+      startBotBtn.addEventListener('click', startBot);
+      stopBotBtn.addEventListener('click', stopBot);
+      claimFaucetBtn.addEventListener('click', claimFaucet);
+      clearLogsBtn.addEventListener('click', clearLogs);
+      refreshAccountsBtn.addEventListener('click', loadAccountStatus);
+      toggleViewBtn.addEventListener('click', toggleView);
+      
+      // Tab switching
+      tabItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const tabName = item.getAttribute('data-tab');
+          
+          // Update tab headers
+          tabItems.forEach(tab => tab.classList.remove('active'));
+          item.classList.add('active');
+          
+          // Update tab content
+          tabPanes.forEach(pane => pane.classList.remove('active'));
+          document.getElementById(tabName + 'Tab').classList.add('active');
+        });
+      });
+    }
+
+    // Save configuration
+    async function saveConfig() {
+      try {
+        const privateKeys = privateKeysTextarea.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line);
+          
+        const config = {
+          privateKeys,
+          inviteCode: inviteCodeInput.value.trim(),
+          proxyEnabled: useProxiesCheckbox.checked
+        };
+        
+        await window.api.saveConfig(config);
+        addLogEntry({
+          type: 'success',
+          message: '配置保存成功',
+          timestamp: new Date().toISOString()
+        });
+        
+        await checkWallets();
+      } catch (error) {
+        addLogEntry({
+          type: 'error',
+          message: `保存配置失败: ${error.message}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    // Import proxies
+    async function importProxies() {
+      try {
+        const result = await window.api.importProxies();
+        
+        if (result.success) {
+          addLogEntry({
+            type: 'success',
+            message: `成功导入 ${result.count} 个代理`,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          addLogEntry({
+            type: 'error',
+            message: result.error || '导入代理失败',
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        addLogEntry({
+          type: 'error',
+          message: `导入代理出错: ${error.message}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    // Check wallet balances
+    async function checkWallets() {
+      try {
+        const privateKeys = privateKeysTextarea.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line);
+          
+        if (privateKeys.length === 0) {
+          walletStatusEl.innerHTML = '未加载钱包';
+          return;
+        }
+        
+        walletStatusEl.innerHTML = '正在检查钱包余额...';
+        wallets = [];
+        
+        for (const privateKey of privateKeys) {
+          try {
+            const result = await window.api.checkWalletBalance(privateKey);
+            
+            if (result.success) {
+              wallets.push({
+                address: result.address,
+                balance: result.balance
+              });
+            }
+          } catch (error) {
+            console.error('检查钱包出错:', error);
+          }
+        }
+        
+        updateWalletStatus();
+        
+        // 如果归集地址输入框为空，并且有钱包，设置默认值为第一个钱包地址
+        if (collectAddressInput && collectAddressInput.value === '' && wallets.length > 0) {
+          collectAddressInput.value = wallets[0].address;
+        }
+      } catch (error) {
+        walletStatusEl.innerHTML = `检查钱包出错: ${error.message}`;
+      }
+    }
+
+    // Update wallet status display
+    function updateWalletStatus() {
+      if (wallets.length === 0) {
+        walletStatusEl.innerHTML = '未找到有效钱包';
+        return;
+      }
+      
+      let html = '';
+      wallets.forEach(wallet => {
+        html += `<div><span class="wallet-address">${shortenAddress(wallet.address)}</span>: <span class="wallet-balance">${wallet.balance} PHRS</span></div>`;
+      });
+      
+      walletStatusEl.innerHTML = html;
+    }
+
+    // Start bot
+    async function startBot() {
+      try {
+        const privateKeys = privateKeysTextarea.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line);
+          
+        if (privateKeys.length === 0) {
+          addLogEntry({
+            type: 'error',
+            message: '未提供私钥',
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+        
+        const config = {
+          privateKeys,
+          inviteCode: inviteCodeInput.value.trim(),
+          proxyEnabled: useProxiesCheckbox.checked
+        };
+        
+        const result = await window.api.startBot(config);
+        
+        if (result.success) {
+          isRunning = true;
+          updateBotStatus();
+          clearLogs();
+          addLogEntry({
+            type: 'info',
+            message: '机器人已启动',
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          addLogEntry({
+            type: 'error',
+            message: result.message || '启动机器人失败',
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        addLogEntry({
+          type: 'error',
+          message: `启动机器人出错: ${error.message}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    // Stop bot
+    async function stopBot() {
+      try {
+        const result = await window.api.stopBot();
+        
+        if (result.success) {
+          addLogEntry({
+            type: 'info',
+            message: '正在停止机器人...',
+            timestamp: new Date().toISOString()
+          });
+          
+          // Bot will update status when actually stopped
+        } else {
+          addLogEntry({
+            type: 'error',
+            message: result.message || '停止机器人失败',
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        addLogEntry({
+          type: 'error',
+          message: `停止机器人出错: ${error.message}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    // Claim faucet
+    async function claimFaucet() {
+      try {
+        const privateKeys = privateKeysTextarea.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line);
+          
+        if (privateKeys.length === 0) {
+          addLogEntry({
+            type: 'error',
+            message: '未提供私钥',
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+        
+        // 获取请求间隔设置
+        const requestIntervalEl = document.getElementById('requestInterval');
+        const requestInterval = Math.max(1, parseInt(requestIntervalEl.value || "3", 10)) * 1000;
+        
+        addLogEntry({
+          type: 'info',
+          message: `开始为 ${privateKeys.length} 个钱包领取水龙头，间隔 ${requestInterval/1000} 秒...`,
+          timestamp: new Date().toISOString()
+        });
+        
+        const inviteCode = inviteCodeInput.value.trim();
+        const useProxy = useProxiesCheckbox.checked;
+        
+        // 禁用按钮，防止重复点击
+        claimFaucetBtn.disabled = true;
+        claimFaucetBtn.textContent = '领取中...';
+        
+        const result = await window.api.claimFaucet(privateKeys, inviteCode, useProxy, requestInterval);
+        
+        claimFaucetBtn.disabled = false;
+        claimFaucetBtn.textContent = '一键领取水龙头';
+        
+        if (result.success) {
+          // 显示每个钱包的领取结果
+          result.results.forEach(item => {
+            addLogEntry({
+              type: item.success ? 'success' : 'warn',
+              message: `${shortenAddress(item.address)}: ${item.message}`,
+              timestamp: new Date().toISOString()
+            });
+          });
+          
+          const successCount = result.results.filter(r => r.success).length;
+          addLogEntry({
+            type: 'info',
+            message: `水龙头领取完成: ${successCount}/${result.results.length} 个钱包成功`,
+            timestamp: new Date().toISOString()
+          });
+          
+          // 重新检查钱包余额
+          await checkWallets();
+          
+          // 刷新账户状态
+          await loadAccountStatus();
+        } else {
+          addLogEntry({
+            type: 'error',
+            message: result.error || '领取水龙头失败',
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        claimFaucetBtn.disabled = false;
+        claimFaucetBtn.textContent = '一键领取水龙头';
+        
+        addLogEntry({
+          type: 'error',
+          message: `领取水龙头出错: ${error.message}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    // Clear log panel
+    function clearLogs() {
+      logPanelEl.innerHTML = '';
+    }
+
+    // Handle log updates
+    function handleLogUpdate(log) {
+      addLogEntry(log);
+      
+      if (log.message.includes('Bot stopped') || log.message.includes('机器人已停止')) {
+        isRunning = false;
+        updateBotStatus();
+      } else if (log.message.includes('Bot failed') || log.message.includes('机器人运行失败')) {
+        isRunning = false;
+        updateBotStatus('error');
+      }
+    }
+
+    // Add log entry to panel
+    function addLogEntry(log) {
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = `log-entry`;
+      div.innerHTML = `
+        <span class="log-time">[${time}]</span>
+        <span class="log-type-${log.type}">${log.message}</span>
+      `;
+      logPanelEl.appendChild(div);
+      logPanelEl.scrollTop = logPanelEl.scrollHeight;
+    }
+
+    // Update bot status UI
+    function updateBotStatus(status = null) {
+      if (status === 'error') {
+        statusIndicatorEl.className = 'status-indicator error';
+        statusIndicatorEl.textContent = '错误';
+        statusDetailsEl.textContent = '机器人遇到错误';
+        startBotBtn.disabled = false;
+        stopBotBtn.disabled = true;
+      } else if (isRunning) {
+        statusIndicatorEl.className = 'status-indicator running';
+        statusIndicatorEl.textContent = '运行中';
+        statusDetailsEl.textContent = '机器人正在运行';
+        startBotBtn.disabled = true;
+        stopBotBtn.disabled = false;
+      } else {
+        statusIndicatorEl.className = 'status-indicator idle';
+        statusIndicatorEl.textContent = '空闲';
+        statusDetailsEl.textContent = '就绪';
+        startBotBtn.disabled = false;
+        stopBotBtn.disabled = true;
+      }
+    }
+
+    // Helper: Shorten wallet address
+    function shortenAddress(address) {
+      return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    }
+
+    // Handle account status updates
+    function handleAccountStatusUpdate(accounts) {
+      accountsData = accounts;
+      updateAccountTable();
+      updateWalletCardView();
+    }
+
+    // Load account status
+    async function loadAccountStatus() {
+      try {
+        const accounts = await window.api.getAccountStatus();
+        handleAccountStatusUpdate(accounts);
+      } catch (error) {
+        console.error('加载账户状态失败:', error);
+      }
+    }
+
+    // Update account table
+    function updateAccountTable() {
+      if (accountsData.length === 0) {
+        accountsTableEl.innerHTML = `
+          <thead>
+            <tr>
+              <th class="col-address">钱包地址</th>
+              <th class="col-balance">PHRS 余额</th>
+              <th class="col-status">状态</th>
+              <th class="col-faucet">水龙头领取</th>
+              <th class="col-checkin">每日签到</th>
+              <th class="col-transfer">转账交易</th>
+              <th class="col-swap">代币兑换</th>
+              <th class="col-nextrun">下次运行</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="8" class="text-center">无账户数据</td>
+            </tr>
+          </tbody>
+        `;
+        updateDashboardStats();
+        return;
+      }
+      
+      let html = `
+        <thead>
+          <tr>
+            <th class="col-address">钱包地址</th>
+            <th class="col-balance">PHRS 余额</th>
+            <th class="col-status">状态</th>
+            <th class="col-faucet">水龙头领取</th>
+            <th class="col-checkin">每日签到</th>
+            <th class="col-transfer">转账交易</th>
+            <th class="col-swap">代币兑换</th>
+            <th class="col-nextrun">下次运行</th>
+          </tr>
+        </thead>
+        <tbody>
+      `;
+      accountsData.forEach(account => {
+        // 确定行的类名
+        let rowClass = '';
+        if (account.status === '运行中') {
+          rowClass = 'running-row';
+        } else if (account.status === '已完成') {
+          rowClass = 'completed-row';
+        } else if (account.status === '等待中') {
+          rowClass = 'waiting-row';
+        }
+        
+        // 确定状态标签的样式
+        let statusClass = 'status-waiting';
+        if (account.status === '运行中') {
+          statusClass = 'status-running';
+        } else if (account.status === '已完成') {
+          statusClass = 'status-completed';
+        } else if (account.status === '冷却中') {
+          statusClass = 'status-cooling';
+        } else if (account.status === '已停止') {
+          statusClass = 'status-stopped';
+        }
+        
+        html += `
+          <tr class="${rowClass}">
+            <td>${shortenAddress(account.address)}</td>
+            <td>${parseFloat(account.balance).toFixed(4)} PHRS</td>
+            <td><span class="status-tag ${statusClass}">${account.status}</span></td>
+            <td>${formatTaskTime(account.lastFaucet)}</td>
+            <td>${formatTaskTime(account.lastCheckIn)}</td>
+            <td>${formatTaskTime(account.lastTransfer)}</td>
+            <td>${formatTaskTime(account.lastSwap)}</td>
+            <td>${account.nextRun ? new Date(account.nextRun).toLocaleTimeString() : '未设置'}</td>
+          </tr>
+        `;
+      });
+      html += '</tbody>';
+      accountsTableEl.innerHTML = html;
+      
+      // 更新仪表盘统计数据
+      updateDashboardStats();
+      
+      // 更新倒计时
+      updateCountdown();
+    }
+    
+    // 格式化任务时间
+    function formatTaskTime(timestamp) {
+      if (!timestamp) return '<span class="task-timestamp">未使用</span>';
+      
+      const taskTime = new Date(timestamp);
+      const now = new Date();
+      const isToday = taskTime.toDateString() === now.toDateString();
+      
+      if (isToday) {
+        return `<span class="task-timestamp task-completed">今日 ${taskTime.toLocaleTimeString()}</span>`;
+      } else {
+        return `<span class="task-timestamp">${taskTime.toLocaleDateString()} ${taskTime.toLocaleTimeString()}</span>`;
+      }
+    }
+    
+    // 更新仪表盘统计数据
+    function updateDashboardStats() {
+      // 更新钱包总数
+      totalWalletsEl.textContent = accountsData.length;
+      
+      // 更新总余额
+      const totalBalance = accountsData.reduce((sum, account) => {
+        return sum + parseFloat(account.balance || 0);
+      }, 0);
+      totalBalanceEl.textContent = totalBalance.toFixed(4);
+      
+      // 今日签到数
+      const today = new Date().toDateString();
+      const checkInCount = accountsData.filter(account => {
+        return account.lastCheckIn && new Date(account.lastCheckIn).toDateString() === today;
+      }).length;
+      checkInCountEl.textContent = checkInCount;
+      
+      // 今日水龙头领取数
+      const faucetCount = accountsData.filter(account => {
+        return account.lastFaucet && new Date(account.lastFaucet).toDateString() === today;
+      }).length;
+      faucetCountEl.textContent = faucetCount;
+    }
+    
+    // 更新倒计时显示
+    function updateCountdown() {
+      // 清除之前的倒计时定时器
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+      
+      // 查找下一次运行时间（取所有账户中最早的一个）
+      let nextRunTime = null;
+      let remainingSeconds = 0;
+      
+      accountsData.forEach(account => {
+        if (account.nextRun) {
+          const runTime = new Date(account.nextRun);
+          if (!nextRunTime || runTime < nextRunTime) {
+            nextRunTime = runTime;
+            remainingSeconds = account.remainingSeconds || 0;
+          }
+        }
+      });
+      
+      if (!nextRunTime) {
+        timerValueEl.textContent = '--:--:--';
+        timerProgressBarEl.style.width = '0%';
+        return;
+      }
+      
+      // 设置倒计时定时器
+      countdownInterval = setInterval(() => {
+        const now = new Date();
+        const diff = nextRunTime - now;
+        
+        if (diff <= 0) {
+          clearInterval(countdownInterval);
+          timerValueEl.textContent = '即将开始';
+          timerProgressBarEl.style.width = '100%';
+          // 10秒后重新加载账户状态
+          setTimeout(loadAccountStatus, 10000);
+          return;
+        }
+        
+        // 计算剩余时间
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        // 更新显示
+        timerValueEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // 更新进度条
+        const totalSeconds = Math.floor(diff / 1000);
+        const progressPercentage = 100 - (totalSeconds / maxCountdownTime * 100);
+        timerProgressBarEl.style.width = `${Math.min(progressPercentage, 100)}%`;
+      }, 1000);
+    }
+
+    // 切换视图（表格/卡片）
+    function toggleView() {
+      isCardView = !isCardView;
+      
+      if (isCardView) {
+        accountListViewEl.style.display = 'none';
+        walletCardViewEl.style.display = 'block';
+        toggleViewBtn.textContent = '表格视图';
+        updateWalletCardView();
+      } else {
+        accountListViewEl.style.display = 'block';
+        walletCardViewEl.style.display = 'none';
+        toggleViewBtn.textContent = '卡片视图';
+      }
+    }
+    
+    // 更新钱包卡片视图
+    function updateWalletCardView() {
+      if (!isCardView) return;
+      
+      let html = '';
+      
+      if (accountsData.length === 0) {
+        html = '<div class="text-center" style="padding: 20px;">无账户数据</div>';
+      } else {
+        accountsData.forEach(account => {
+          // 确定状态标签的样式
+          let statusClass = 'status-waiting';
+          if (account.status === '运行中') {
+            statusClass = 'status-running';
+          } else if (account.status === '已完成') {
+            statusClass = 'status-completed';
+          } else if (account.status === '冷却中') {
+            statusClass = 'status-cooling';
+          } else if (account.status === '已停止') {
+            statusClass = 'status-stopped';
+          }
+          
+          html += `
+            <div class="wallet-card">
+              <div class="wallet-card-header">
+                <div class="wallet-address-full">${account.address}</div>
+                <span class="status-tag ${statusClass}">${account.status}</span>
+              </div>
+              <div class="wallet-balance-large">${parseFloat(account.balance).toFixed(4)} PHRS</div>
+              <div class="wallet-details">
+                <div class="wallet-detail-item">
+                  <span class="wallet-detail-label">上次水龙头:</span>
+                  <span class="wallet-detail-value">${account.lastFaucet ? new Date(account.lastFaucet).toLocaleString() : '未使用'}</span>
+                </div>
+                <div class="wallet-detail-item">
+                  <span class="wallet-detail-label">上次签到:</span>
+                  <span class="wallet-detail-value">${account.lastCheckIn ? new Date(account.lastCheckIn).toLocaleString() : '未使用'}</span>
+                </div>
+                <div class="wallet-detail-item">
+                  <span class="wallet-detail-label">上次转账:</span>
+                  <span class="wallet-detail-value">${account.lastTransfer ? new Date(account.lastTransfer).toLocaleString() : '未使用'}</span>
+                </div>
+                <div class="wallet-detail-item">
+                  <span class="wallet-detail-label">上次兑换:</span>
+                  <span class="wallet-detail-value">${account.lastSwap ? new Date(account.lastSwap).toLocaleString() : '未使用'}</span>
+                </div>
+                <div class="wallet-detail-item">
+                  <span class="wallet-detail-label">下次运行:</span>
+                  <span class="wallet-detail-value">${account.nextRun ? new Date(account.nextRun).toLocaleString() : '未设置'}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      }
+      
+      walletCardsEl.innerHTML = html;
+    }
+  </script>
+</body>
+</html> 

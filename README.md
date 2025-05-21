@@ -20,21 +20,16 @@
 
 ## 安装步骤 ⚙️
 
-1. 克隆仓库:
-   ```bash
-   git clone https://github.com/vikitoshi/Pharos.git
-   cd Pharos
-   ```
-2. 安装依赖:
+1. 安装依赖:
    ```bash
    npm install
    ```
-3. (可选) 在`proxies.txt`中添加代理(每行一个):
+2. (可选) 在`proxies.txt`中添加代理(每行一个):
    ```
    http://用户名:密码@IP:端口
    socks5://用户名:密码@IP:端口
    ```
-4、运行工具
+3. 运行工具
    ```bash
    npm start
    ```
